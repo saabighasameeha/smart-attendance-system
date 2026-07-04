@@ -1,4 +1,5 @@
 const express = require('express');
+const ExcelJS = require('exceljs');
 const Department = require('../models/Department');
 const Subject = require('../models/Subject');
 const Student = require('../models/Student');
@@ -126,6 +127,63 @@ router.get('/attendance/monthly', async (req, res) => {
     }));
 
     res.json(report);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Export monthly report as Excel file
+router.get('/attendance/monthly/export', async (req, res) => {
+  try {
+    const { month, year } = req.query;
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 1);
+
+    const records = await Attendance.find({
+      date: { $gte: start, $lt: end }
+    }).populate('student', 'name rollNumber');
+
+    const grouped = {};
+    records.forEach(r => {
+      const id = r.student._id.toString();
+      if (!grouped[id]) {
+        grouped[id] = {
+          name: r.student.name,
+          rollNumber: r.student.rollNumber,
+          total: 0,
+          present: 0
+        };
+      }
+      grouped[id].total += 1;
+      if (r.status === 'Present') grouped[id].present += 1;
+    });
+
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet('Monthly Report');
+
+    sheet.columns = [
+      { header: 'Name', key: 'name', width: 25 },
+      { header: 'Roll Number', key: 'rollNumber', width: 15 },
+      { header: 'Total Classes', key: 'total', width: 15 },
+      { header: 'Present', key: 'present', width: 10 },
+      { header: 'Percentage', key: 'percentage', width: 12 }
+    ];
+
+    Object.values(grouped).forEach(s => {
+      sheet.addRow({
+        name: s.name,
+        rollNumber: s.rollNumber,
+        total: s.total,
+        present: s.present,
+        percentage: ((s.present / s.total) * 100).toFixed(2) + '%'
+      });
+    });
+
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', 'attachment; filename=monthly_report.xlsx');
+
+    await workbook.xlsx.write(res);
+    res.end();
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
