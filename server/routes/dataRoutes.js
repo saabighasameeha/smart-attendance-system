@@ -94,4 +94,41 @@ router.get('/attendance/daily', async (req, res) => {
   }
 });
 
+// Monthly report - attendance percentage for all students in a month
+router.get('/attendance/monthly', async (req, res) => {
+  try {
+    const { month, year } = req.query;
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 1);
+
+    const records = await Attendance.find({
+      date: { $gte: start, $lt: end }
+    }).populate('student', 'name rollNumber');
+
+    const grouped = {};
+    records.forEach(r => {
+      const id = r.student._id.toString();
+      if (!grouped[id]) {
+        grouped[id] = {
+          name: r.student.name,
+          rollNumber: r.student.rollNumber,
+          total: 0,
+          present: 0
+        };
+      }
+      grouped[id].total += 1;
+      if (r.status === 'Present') grouped[id].present += 1;
+    });
+
+    const report = Object.values(grouped).map(s => ({
+      ...s,
+      percentage: ((s.present / s.total) * 100).toFixed(2)
+    }));
+
+    res.json(report);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
