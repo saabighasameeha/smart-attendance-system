@@ -63,4 +63,35 @@ router.get('/attendance/student/:studentId', async (req, res) => {
   }
 });
 
+// Get attendance percentage for a student
+router.get('/attendance/percentage/:studentId', async (req, res) => {
+  try {
+    const records = await Attendance.find({ student: req.params.studentId });
+    const total = records.length;
+    const present = records.filter(r => r.status === 'Present').length;
+    const percentage = total > 0 ? ((present / total) * 100).toFixed(2) : 0;
+    res.json({ total, present, absent: total - present, percentage });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Daily report - all attendance for a specific date
+router.get('/attendance/daily', async (req, res) => {
+  try {
+    const { date } = req.query;
+    const start = new Date(date);
+    const end = new Date(date);
+    end.setDate(end.getDate() + 1);
+
+    const records = await Attendance.find({
+      date: { $gte: start, $lt: end }
+    }).populate('student', 'name rollNumber');
+
+    res.json(records);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
