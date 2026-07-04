@@ -1,0 +1,12 @@
+{
+  "records": [
+    {
+      "student": "6a4909a4aea9b0931d62ada9",
+      "subject": "6a4916f9aea9b0931d62adae",
+      "faculty": "6a48fc48f954e51b032a0b44",
+      "date": "2026-07-05T00:00:00.000Z",
+      "period": 1,
+      "status": "Present"
+    }
+  ]
+}
