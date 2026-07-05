@@ -240,4 +240,64 @@ router.get('/attendance/frequently-absent', async (req, res) => {
   }
 });
 
+// Subject-wise attendance analysis
+router.get('/attendance/subject-wise', async (req, res) => {
+  try {
+    const records = await Attendance.find().populate('subject', 'name');
+
+    const grouped = {};
+    records.forEach(r => {
+      if (!r.subject) return;
+      const id = r.subject._id.toString();
+      if (!grouped[id]) {
+        grouped[id] = {
+          subjectName: r.subject.name,
+          total: 0,
+          present: 0
+        };
+      }
+      grouped[id].total += 1;
+      if (r.status === 'Present') grouped[id].present += 1;
+    });
+
+    const result = Object.values(grouped).map(s => ({
+      ...s,
+      percentage: s.total > 0 ? ((s.present / s.total) * 100).toFixed(2) : 0
+    }));
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Attendance trend - day-by-day present/absent count for a month
+router.get('/attendance/trend', async (req, res) => {
+  try {
+    const { month, year } = req.query;
+    const start = new Date(year, month - 1, 1);
+    const end = new Date(year, month, 1);
+
+    const records = await Attendance.find({
+      date: { $gte: start, $lt: end }
+    });
+
+    const grouped = {};
+    records.forEach(r => {
+      const day = new Date(r.date).getDate();
+      if (!grouped[day]) {
+        grouped[day] = { day, present: 0, absent: 0 };
+      }
+      if (r.status === 'Present') grouped[day].present += 1;
+      else grouped[day].absent += 1;
+    });
+
+    const result = Object.values(grouped).sort((a, b) => a.day - b.day);
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;

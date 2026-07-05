@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 function Reports() {
   const [date, setDate] = useState("");
@@ -14,6 +15,13 @@ function Reports() {
 
   const [absentData, setAbsentData] = useState([]);
   const [showAbsentList, setShowAbsentList] = useState(false);
+
+  const [subjectData, setSubjectData] = useState([]);
+  const [showSubjectList, setShowSubjectList] = useState(false);
+
+  const [trendMonth, setTrendMonth] = useState("");
+  const [trendData, setTrendData] = useState([]);
+  const [showTrendChart, setShowTrendChart] = useState(false);
 
   const getDailyReport = async () => {
     try {
@@ -72,6 +80,29 @@ function Reports() {
     } catch (err) {
       console.error(err);
       alert("Frequently absent list load ஆகல, backend route check பண்ணுங்க");
+    }
+  };
+
+  const getSubjectWise = async () => {
+    try {
+      const res = await axios.get(`http://localhost:5000/api/data/attendance/subject-wise`);
+      setSubjectData(res.data);
+      setShowSubjectList(true);
+    } catch (err) {
+      console.error(err);
+      alert("Subject-wise data load ஆகல, backend route check பண்ணுங்க");
+    }
+  };
+
+  const getTrendData = async () => {
+    try {
+      const [year, monthNum] = trendMonth.split("-");
+      const res = await axios.get(`http://localhost:5000/api/data/attendance/trend?month=${monthNum}&year=${year}`);
+      setTrendData(res.data);
+      setShowTrendChart(true);
+    } catch (err) {
+      console.error(err);
+      alert("Trend data load ஆகல, backend route check பண்ணுங்க");
     }
   };
 
@@ -151,6 +182,42 @@ function Reports() {
             </li>
           ))}
         </ul>
+      )}
+
+      <h3>Subject-wise Analysis</h3>
+      <button onClick={getSubjectWise}>Show Subject-wise Attendance</button>
+      {showSubjectList && (
+        <ul>
+          {subjectData.length === 0 && <p>Data இல்லை.</p>}
+          {subjectData.map((s, i) => (
+            <li key={i}>
+              {s.subjectName} - {s.percentage}% (Present: {s.present} / {s.total})
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <h3>Attendance Trend Chart</h3>
+      <input type="month" value={trendMonth} onChange={(e) => setTrendMonth(e.target.value)} />
+      <button onClick={getTrendData}>Show Trend Chart</button>
+      {showTrendChart && (
+        <div style={{ width: "100%", height: 300, marginTop: "20px" }}>
+          {trendData.length === 0 ? (
+            <p>இந்த மாதத்துக்கு data இல்லை.</p>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trendData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="day" label={{ value: "Day of Month", position: "insideBottom", offset: -5 }} />
+                <YAxis allowDecimals={false} />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="present" stroke="#4CAF50" name="Present" />
+                <Line type="monotone" dataKey="absent" stroke="#f44336" name="Absent" />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </div>
       )}
     </div>
   );
