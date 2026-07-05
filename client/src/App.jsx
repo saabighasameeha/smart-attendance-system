@@ -1,15 +1,17 @@
 import { useState, useEffect } from 'react';
+import Reports from './Reports';
 
 function App() {
+
   const [loggedIn, setLoggedIn] = useState(false);
   const [facultyName, setFacultyName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginMessage, setLoginMessage] = useState('');
-
   const [students, setStudents] = useState([]);
   const [attendance, setAttendance] = useState({});
   const [saveMessage, setSaveMessage] = useState('');
+  const [showReports, setShowReports] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -111,40 +113,56 @@ function App() {
   return (
     <div style={{ maxWidth: '600px', margin: '2rem auto', fontFamily: 'Arial' }}>
       <h2 style={{ textAlign: 'center' }}>Welcome, {facultyName}</h2>
-      <h3 style={{ textAlign: 'center' }}>Mark Attendance</h3>
 
-      {students.length === 0 && <p style={{ textAlign: 'center' }}>Loading students...</p>}
-
-      {students.map(s => (
-        <div key={s._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', borderBottom: '1px solid #eee' }}>
-          <span>{s.name} ({s.rollNumber})</span>
-          <div>
-            <button
-              onClick={() => markStatus(s._id, 'Present')}
-              style={{ marginRight: '8px', padding: '6px 12px', background: attendance[s._id] === 'Present' ? '#4CAF50' : '#ddd', color: attendance[s._id] === 'Present' ? 'white' : 'black', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-            >
-              Present
-            </button>
-            <button
-              onClick={() => markStatus(s._id, 'Absent')}
-              style={{ padding: '6px 12px', background: attendance[s._id] === 'Absent' ? '#f44336' : '#ddd', color: attendance[s._id] === 'Absent' ? 'white' : 'black', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
-            >
-              Absent
-            </button>
-          </div>
-        </div>
-      ))}
-
-      {students.length > 0 && (
-        <button
-          onClick={handleSave}
-          style={{ width: '100%', marginTop: '1.5rem', padding: '12px', background: '#2196F3', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '16px' }}
-        >
-          Save Attendance
+      <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+        <button onClick={() => setShowReports(false)} style={{ marginRight: '8px', padding: '8px 16px' }}>
+          Mark Attendance
         </button>
-      )}
+        <button onClick={() => setShowReports(true)} style={{ padding: '8px 16px' }}>
+          View Reports
+        </button>
+      </div>
 
-      {saveMessage && <p style={{ textAlign: 'center', marginTop: '1rem', color: saveMessage.includes('saved') ? 'green' : 'red' }}>{saveMessage}</p>}
+      {showReports ? (
+        <Reports />
+      ) : (
+        <>
+          <h3 style={{ textAlign: 'center' }}>Mark Attendance</h3>
+
+          {students.length === 0 && <p style={{ textAlign: 'center' }}>Loading students...</p>}
+
+          {students.map(s => (
+            <div key={s._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px', borderBottom: '1px solid #eee' }}>
+              <span>{s.name} ({s.rollNumber})</span>
+              <div>
+                <button
+                  onClick={() => markStatus(s._id, 'Present')}
+                  style={{ marginRight: '8px', padding: '6px 12px', background: attendance[s._id] === 'Present' ? '#4CAF50' : '#ddd', color: attendance[s._id] === 'Present' ? 'white' : 'black', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                >
+                  Present
+                </button>
+                <button
+                  onClick={() => markStatus(s._id, 'Absent')}
+                  style={{ padding: '6px 12px', background: attendance[s._id] === 'Absent' ? '#f44336' : '#ddd', color: attendance[s._id] === 'Absent' ? 'white' : 'black', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+                >
+                  Absent
+                </button>
+              </div>
+            </div>
+          ))}
+
+          {students.length > 0 && (
+            <button
+              onClick={handleSave}
+              style={{ width: '100%', marginTop: '1.5rem', padding: '12px', background: '#2196F3', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer', fontSize: '16px' }}
+            >
+              Save Attendance
+            </button>
+          )}
+
+          {saveMessage && <p style={{ textAlign: 'center', marginTop: '1rem', color: saveMessage.includes('saved') ? 'green' : 'red' }}>{saveMessage}</p>}
+        </>
+      )}
     </div>
   );
 }

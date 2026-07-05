@@ -43,6 +43,22 @@ router.get('/students', async (req, res) => {
   }
 });
 
+// Search student by name or roll number
+router.get('/students/search', async (req, res) => {
+  try {
+    const { query } = req.query;
+    const students = await Student.find({
+      $or: [
+        { name: { $regex: query, $options: 'i' } },
+        { rollNumber: { $regex: query, $options: 'i' } }
+      ]
+    });
+    res.json(students);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Save attendance (bulk - multiple students at once)
 router.post('/attendance/mark', async (req, res) => {
   try {
