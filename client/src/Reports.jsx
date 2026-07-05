@@ -84,7 +84,16 @@ function Reports() {
       )}
       <ul>
         {monthlyData.map((item, i) => (
-          <li key={i}>{item.name} ({item.rollNumber}) - {item.percentage}%</li>
+          <li
+            key={i}
+            style={{
+              color: item.percentage < 80 ? "red" : "inherit",
+              fontWeight: item.percentage < 80 ? "bold" : "normal",
+            }}
+          >
+            {item.name} ({item.rollNumber}) - {item.percentage}%
+            {item.percentage < 80 && <span> ⚠️ Shortage</span>}
+          </li>
         ))}
       </ul>
 
