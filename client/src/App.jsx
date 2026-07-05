@@ -1,16 +1,44 @@
 import { useState, useEffect } from 'react';
 
 function App() {
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [facultyName, setFacultyName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginMessage, setLoginMessage] = useState('');
+
   const [students, setStudents] = useState([]);
   const [attendance, setAttendance] = useState({});
-  const [message, setMessage] = useState('');
+  const [saveMessage, setSaveMessage] = useState('');
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('http://localhost:5000/api/auth/faculty/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setFacultyName(data.faculty.name);
+        setLoggedIn(true);
+      } else {
+        setLoginMessage(data.message || 'Login failed');
+      }
+    } catch (err) {
+      setLoginMessage('Error connecting to server');
+    }
+  };
 
   useEffect(() => {
-    fetch('http://localhost:5000/api/data/students')
-      .then(res => res.json())
-      .then(data => setStudents(data))
-      .catch(() => setMessage('Failed to load students'));
-  }, []);
+    if (loggedIn) {
+      fetch('http://localhost:5000/api/data/students')
+        .then(res => res.json())
+        .then(data => setStudents(data))
+        .catch(() => setSaveMessage('Failed to load students'));
+    }
+  }, [loggedIn]);
 
   const markStatus = (studentId, status) => {
     setAttendance(prev => ({ ...prev, [studentId]: status }));
@@ -29,7 +57,7 @@ function App() {
       }));
 
     if (records.length === 0) {
-      setMessage('Please mark attendance for at least one student');
+      setSaveMessage('Please mark attendance for at least one student');
       return;
     }
 
@@ -41,18 +69,49 @@ function App() {
       });
       const data = await res.json();
       if (res.ok) {
-        setMessage(`Attendance saved for ${data.count} student(s)!`);
+        setSaveMessage(`Attendance saved for ${data.count} student(s)!`);
       } else {
-        setMessage(data.message || 'Failed to save');
+        setSaveMessage(data.message || 'Failed to save');
       }
     } catch (err) {
-      setMessage('Error connecting to server');
+      setSaveMessage('Error connecting to server');
     }
   };
 
+  if (!loggedIn) {
+    return (
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', background: '#f0f2f5' }}>
+        <form onSubmit={handleLogin} style={{ background: 'white', padding: '2rem', borderRadius: '10px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', width: '300px' }}>
+          <h2 style={{ textAlign: 'center', marginBottom: '1.5rem' }}>Faculty Login</h2>
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            style={{ width: '100%', padding: '10px', marginBottom: '1rem', borderRadius: '5px', border: '1px solid #ccc' }}
+            required
+          />
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            style={{ width: '100%', padding: '10px', marginBottom: '1rem', borderRadius: '5px', border: '1px solid #ccc' }}
+            required
+          />
+          <button type="submit" style={{ width: '100%', padding: '10px', background: '#4CAF50', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>
+            Login
+          </button>
+          {loginMessage && <p style={{ marginTop: '1rem', textAlign: 'center', color: 'red' }}>{loginMessage}</p>}
+        </form>
+      </div>
+    );
+  }
+
   return (
     <div style={{ maxWidth: '600px', margin: '2rem auto', fontFamily: 'Arial' }}>
-      <h2 style={{ textAlign: 'center' }}>Mark Attendance</h2>
+      <h2 style={{ textAlign: 'center' }}>Welcome, {facultyName}</h2>
+      <h3 style={{ textAlign: 'center' }}>Mark Attendance</h3>
 
       {students.length === 0 && <p style={{ textAlign: 'center' }}>Loading students...</p>}
 
@@ -85,7 +144,7 @@ function App() {
         </button>
       )}
 
-      {message && <p style={{ textAlign: 'center', marginTop: '1rem', color: message.includes('saved') ? 'green' : 'red' }}>{message}</p>}
+      {saveMessage && <p style={{ textAlign: 'center', marginTop: '1rem', color: saveMessage.includes('saved') ? 'green' : 'red' }}>{saveMessage}</p>}
     </div>
   );
 }
