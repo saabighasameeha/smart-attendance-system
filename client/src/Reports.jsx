@@ -12,6 +12,9 @@ function Reports() {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [studentPercentage, setStudentPercentage] = useState(null);
 
+  const [absentData, setAbsentData] = useState([]);
+  const [showAbsentList, setShowAbsentList] = useState(false);
+
   const getDailyReport = async () => {
     try {
       const res = await axios.get(`http://localhost:5000/api/data/attendance/daily?date=${date}`);
@@ -58,6 +61,17 @@ function Reports() {
     } catch (err) {
       console.error(err);
       alert("Student percentage load ஆகல");
+    }
+  };
+
+  const getFrequentlyAbsent = async () => {
+    try {
+      const res = await axios.get(`http://localhost:5000/api/data/attendance/frequently-absent`);
+      setAbsentData(res.data);
+      setShowAbsentList(true);
+    } catch (err) {
+      console.error(err);
+      alert("Frequently absent list load ஆகல, backend route check பண்ணுங்க");
     }
   };
 
@@ -124,6 +138,19 @@ function Reports() {
           <p>Absent: {studentPercentage.absent}</p>
           <p>Percentage: {studentPercentage.percentage}%</p>
         </div>
+      )}
+
+      <h3>Frequently Absent Students</h3>
+      <button onClick={getFrequentlyAbsent}>Show Frequently Absent Students</button>
+      {showAbsentList && (
+        <ul>
+          {absentData.length === 0 && <p>எந்த student-உம் absent ஆகவில்லை.</p>}
+          {absentData.map((s, i) => (
+            <li key={i}>
+              {s.name} ({s.rollNumber}) - Absent: {s.absent} / {s.total} ({s.absentPercentage}% absent)
+            </li>
+          ))}
+        </ul>
       )}
     </div>
   );

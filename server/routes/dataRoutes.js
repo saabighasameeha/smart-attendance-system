@@ -205,4 +205,39 @@ router.get('/attendance/monthly/export', async (req, res) => {
   }
 });
 
+// Frequently absent students (overall, across all records)
+router.get('/attendance/frequently-absent', async (req, res) => {
+  try {
+    const records = await Attendance.find().populate('student', 'name rollNumber');
+
+    const grouped = {};
+    records.forEach(r => {
+      if (!r.student) return;
+      const id = r.student._id.toString();
+      if (!grouped[id]) {
+        grouped[id] = {
+          name: r.student.name,
+          rollNumber: r.student.rollNumber,
+          total: 0,
+          absent: 0
+        };
+      }
+      grouped[id].total += 1;
+      if (r.status === 'Absent') grouped[id].absent += 1;
+    });
+
+    const result = Object.values(grouped)
+      .map(s => ({
+        ...s,
+        absentPercentage: s.total > 0 ? ((s.absent / s.total) * 100).toFixed(2) : 0
+      }))
+      .filter(s => s.absent > 0)
+      .sort((a, b) => b.absent - a.absent);
+
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 module.exports = router;
